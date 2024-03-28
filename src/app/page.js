@@ -1,95 +1,146 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+'use client'
 
-export default function Home() {
-  return (
-    <main className={styles.main}>
-      <div className={styles.description}>
-        <p>
-          Get started by editing&nbsp;
-          <code className={styles.code}>src/app/page.js</code>
-        </p>
-        <div>
-          <a
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className={styles.vercelLogo}
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
+import { useEffect, useRef } from 'react'
+import ResourcesProvider, { useResources } from './context/resources'
+import { Vector2 } from './classes/vector2'
+import { Sprite } from './classes/sprite'
+import { GameLoop } from './classes/game-loop'
+import { Input } from './classes/input'
+import { gridCells, isSpaceFree } from './helpers/grid'
+import { moveTowards } from './helpers/move-towards'
+import { walls } from './levels/level-1'
 
-      <div className={styles.center}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
+const Game = () => {
+    const canvasRef = useRef()
+    const ctx = canvasRef.current?.getContext?.('2d')
+
+    const { images = {} } = useResources()
+
+    const skySprite = new Sprite({
+        resource: images.sky,
+        frameSize: new Vector2(320, 180)
+    })
+
+    const groundSprite = new Sprite({
+        resource: images.ground,
+        frameSize: new Vector2(320, 180)
+    })
+
+    const hero = new Sprite({
+        resource: images.hero,
+        frameSize: new Vector2(32, 32),
+        hFrames: 3,
+        vFrames: 8,
+        frame: 1,
+        position: new Vector2(gridCells(6), gridCells(5))
+    })
+
+    const heroDestinationPosition = hero.position.duplicate()
+
+    const shadow = new Sprite({
+        resource: images.shadow,
+        frameSize: new Vector2(32, 32)
+    })
+
+    const input = new Input()
+
+    const update = () => {
+        const distance = moveTowards(hero, heroDestinationPosition, 1)
+        const hasArrived = distance <= 1
+
+        if(hasArrived) {
+            tryMove()
+        }
+    }
+
+    const tryMove = () => {
+        if(!input.direction) {
+            return
+        }
+
+        let nextX = heroDestinationPosition.x
+        let nextY = heroDestinationPosition.y
+        const gridSize = 16
+        
+        if(input.direction) {
+            switch(input.direction) {
+                case 'ArrowUp':
+                    nextY -= gridSize
+                    hero.frame = 6
+
+                    break
+                case 'ArrowRight':
+                    nextX += gridSize
+                    hero.frame = 3
+
+                    break
+                case 'ArrowDown':
+                    nextY += gridSize
+                    hero.frame = 0
+
+                    break
+                case 'ArrowLeft':
+                    nextX -= gridSize
+                    hero.frame = 9
+
+                    break
+            }
+        }
+
+        if(isSpaceFree(walls, nextX, nextY)) {
+            heroDestinationPosition.x = nextX
+            heroDestinationPosition.y = nextY
+        }
+    }
+
+    const draw = () => {
+        if(!ctx) {
+            return
+        }
+
+        skySprite.drawImage(ctx, 0, 0)
+        groundSprite.drawImage(ctx, 0, 0)
+
+        // Hero offset
+        const heroOffset = new Vector2(-8, -21)
+        const [
+            heroPosX,
+            heroPosY
+        ] = [
+            hero.position.x + heroOffset.x,
+            hero.position.y + heroOffset.y
+        ]
+
+        shadow.drawImage(ctx, heroPosX, heroPosY)
+        hero.drawImage(ctx, heroPosX, heroPosY)
+    }
+
+    const gameLoop = new GameLoop(update, draw)
+
+    useEffect(() => {
+        gameLoop.start()
+
+        return () => gameLoop.stop()
+    }, [ctx, images])
+
+    if(!images) {
+        return null
+    }
+
+    return (
+        <canvas
+            id="game-canvas"
+            width={320}
+            height={180}
+            ref={canvasRef}
         />
-      </div>
+    )
+}
 
-      <div className={styles.grid}>
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Docs <span>-&gt;</span>
-          </h2>
-          <p>Find in-depth information about Next.js features and API.</p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Learn <span>-&gt;</span>
-          </h2>
-          <p>Learn about Next.js in an interactive course with&nbsp;quizzes!</p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Templates <span>-&gt;</span>
-          </h2>
-          <p>Explore starter templates for Next.js.</p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Deploy <span>-&gt;</span>
-          </h2>
-          <p>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
-  );
+export default function GamePage(props) {
+    return (
+        <ResourcesProvider>
+            <Game {...props} />
+        </ResourcesProvider>
+    )
 }

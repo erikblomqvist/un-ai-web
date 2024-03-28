@@ -1,3 +1,26 @@
 {
-  "extends": "next/core-web-vitals"
+  "extends": "next/core-web-vitals",
+  "rules": {
+    "no-unused-vars": ["error", {
+        "vars": "local",
+        "args": "after-used",
+        "ignoreRestSiblings": false
+    }],
+    "object-curly-spacing": ["error", "always"],
+    "comma-spacing": 2,
+    "no-console": 0,
+    "no-useless-escape": 0,
+    "no-extra-boolean-cast": 0,
+    "react/display-name": 0,
+    "react/prop-types": 0,
+    "react/jsx-tag-spacing": ["error", {
+        "closingSlash": "never",
+        "beforeSelfClosing": "always",
+        "beforeClosing": "never"
+    }],
+    "react/jsx-closing-tag-location": 2,
+    "react/jsx-no-useless-fragment": 2,
+    "react/jsx-indent-props": ["error", 4],
+    "react-hooks/rules-of-hooks": "error"
+  }
 }
