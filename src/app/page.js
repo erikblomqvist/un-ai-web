@@ -5,16 +5,20 @@ import ResourcesProvider, { useResources } from './context/resources'
 import { Vector2 } from './classes/vector2'
 import { Sprite } from './classes/sprite'
 import { GameLoop } from './classes/game-loop'
-import { Input } from './classes/input'
 import { gridCells, isSpaceFree } from './helpers/grid'
 import { moveTowards } from './helpers/move-towards'
 import { walls } from './levels/level-1'
+import { InputProvider, useInput } from './context/input'
 
 const Game = () => {
     const canvasRef = useRef()
+    const currentDirectionRef = useRef(null)
+    
     const ctx = canvasRef.current?.getContext?.('2d')
 
     const { images = {} } = useResources()
+
+    const { heldDirections = [] } = useInput()
 
     const skySprite = new Sprite({
         resource: images.sky,
@@ -42,8 +46,6 @@ const Game = () => {
         frameSize: new Vector2(32, 32)
     })
 
-    const input = new Input()
-
     const update = () => {
         const distance = moveTowards(hero, heroDestinationPosition, 1)
         const hasArrived = distance <= 1
@@ -54,7 +56,9 @@ const Game = () => {
     }
 
     const tryMove = () => {
-        if(!input.direction) {
+        const currentDirection = currentDirectionRef.current
+        
+        if(!currentDirection) {
             return
         }
 
@@ -62,8 +66,8 @@ const Game = () => {
         let nextY = heroDestinationPosition.y
         const gridSize = 16
         
-        if(input.direction) {
-            switch(input.direction) {
+        if(currentDirection) {
+            switch(currentDirection) {
                 case 'ArrowUp':
                     nextY -= gridSize
                     hero.frame = 6
@@ -123,6 +127,10 @@ const Game = () => {
         return () => gameLoop.stop()
     }, [ctx, images])
 
+    useEffect(() => {
+        currentDirectionRef.current = heldDirections[0] ?? null
+    }, [heldDirections])
+
     if(!images) {
         return null
     }
@@ -140,7 +148,9 @@ const Game = () => {
 export default function GamePage(props) {
     return (
         <ResourcesProvider>
-            <Game {...props} />
+            <InputProvider>
+                <Game {...props} />
+            </InputProvider>
         </ResourcesProvider>
     )
 }
