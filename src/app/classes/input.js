@@ -7,7 +7,7 @@ export class Input {
     constructor() {
         this.heldDirections = []
 
-        window.addEventListener('keydown', e => {
+        global.addEventListener('keydown', e => {
             if(e.code === 'ArrowUp' || e.code === 'KeyW') {
                 this.onKeyDown(UP)
             }
@@ -25,7 +25,7 @@ export class Input {
             }
         })
 
-        window.addEventListener('keyup', e => {
+        global.addEventListener('keyup', e => {
             if(e.code === 'ArrowUp' || e.code === 'KeyW') {
                 this.onKeyUp(UP)
             }
