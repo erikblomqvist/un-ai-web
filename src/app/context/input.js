@@ -4,10 +4,10 @@ import {
 } from 'react'
 
 // Constants
-const UP = 'ArrowUp'
-const RIGHT = 'ArrowRight'
-const DOWN = 'ArrowDown'
-const LEFT = 'ArrowLeft'
+export const UP = 'ArrowUp'
+export const RIGHT = 'ArrowRight'
+export const DOWN = 'ArrowDown'
+export const LEFT = 'ArrowLeft'
 
 const InputContext = createContext()
 

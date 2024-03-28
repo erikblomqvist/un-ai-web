@@ -1,18 +1,39 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+
 import ResourcesProvider, { useResources } from './context/resources'
+import {
+    InputProvider, useInput,
+    UP, RIGHT, DOWN, LEFT
+} from './context/input'
+
 import { Vector2 } from './classes/vector2'
 import { Sprite } from './classes/sprite'
 import { GameLoop } from './classes/game-loop'
+import { Animations } from './classes/animations'
+import { FrameIndexPattern } from './classes/frame-index-pattern'
+
 import { gridCells, isSpaceFree } from './helpers/grid'
 import { moveTowards } from './helpers/move-towards'
+
+import {
+    WALK_DOWN,
+    WALK_RIGHT,
+    WALK_UP,
+    WALK_LEFT,
+    STAND_DOWN,
+    STAND_RIGHT,
+    STAND_UP,
+    STAND_LEFT
+} from './objects/hero/hero-animations'
+
 import { walls } from './levels/level-1'
-import { InputProvider, useInput } from './context/input'
 
 const Game = () => {
     const canvasRef = useRef()
     const currentDirectionRef = useRef(null)
+    const heroFacingRef = useRef(DOWN)
     
     const ctx = canvasRef.current?.getContext?.('2d')
 
@@ -36,7 +57,17 @@ const Game = () => {
         hFrames: 3,
         vFrames: 8,
         frame: 1,
-        position: new Vector2(gridCells(6), gridCells(5))
+        position: new Vector2(gridCells(6), gridCells(5)),
+        animations: new Animations({
+            walkDown: new FrameIndexPattern(WALK_DOWN),
+            walkRight: new FrameIndexPattern(WALK_RIGHT),
+            walkUp: new FrameIndexPattern(WALK_UP),
+            walkLeft: new FrameIndexPattern(WALK_LEFT),
+            standDown: new FrameIndexPattern(STAND_DOWN),
+            standRight: new FrameIndexPattern(STAND_RIGHT),
+            standUp: new FrameIndexPattern(STAND_UP),
+            standLeft: new FrameIndexPattern(STAND_LEFT)
+        })
     })
 
     const heroDestinationPosition = hero.position.duplicate()
@@ -46,19 +77,27 @@ const Game = () => {
         frameSize: new Vector2(32, 32)
     })
 
-    const update = () => {
+    const update = (deltaTime) => {
         const distance = moveTowards(hero, heroDestinationPosition, 1)
         const hasArrived = distance <= 1
 
         if(hasArrived) {
             tryMove()
         }
+
+        hero.step(deltaTime)
     }
 
     const tryMove = () => {
         const currentDirection = currentDirectionRef.current
-        
+        const heroFacing = heroFacingRef.current
+
         if(!currentDirection) {
+            if(heroFacing === DOWN) { hero.animations.play('standDown') }
+            if(heroFacing === UP) { hero.animations.play('standUp') }
+            if(heroFacing === LEFT) { hero.animations.play('standLeft') }
+            if(heroFacing === RIGHT) { hero.animations.play('standRight') }
+            
             return
         }
 
@@ -68,28 +107,30 @@ const Game = () => {
         
         if(currentDirection) {
             switch(currentDirection) {
-                case 'ArrowUp':
-                    nextY -= gridSize
-                    hero.frame = 6
-
-                    break
-                case 'ArrowRight':
-                    nextX += gridSize
-                    hero.frame = 3
-
-                    break
-                case 'ArrowDown':
+                case DOWN:
                     nextY += gridSize
-                    hero.frame = 0
+                    hero.animations.play('walkDown')
 
                     break
-                case 'ArrowLeft':
+                case UP:
+                    nextY -= gridSize
+                    hero.animations.play('walkUp')
+
+                    break
+                case LEFT:
                     nextX -= gridSize
-                    hero.frame = 9
+                    hero.animations.play('walkLeft')
+
+                    break
+                case RIGHT:
+                    nextX += gridSize
+                    hero.animations.play('walkRight')
 
                     break
             }
         }
+
+        heroFacingRef.current = currentDirection ?? heroFacing
 
         if(isSpaceFree(walls, nextX, nextY)) {
             heroDestinationPosition.x = nextX
